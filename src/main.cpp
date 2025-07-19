@@ -82,6 +82,51 @@ void useRGB(int r, int g, int b) {
   analogWrite(BLUE_LED_PIN, b);
 }
 
+
+
+void displayUI(unsigned long currentMillis) {
+  // Update display less frequently to improve responsiveness
+  static unsigned long lastDisplayUpdate = 0;
+  if (currentMillis - lastDisplayUpdate >= 100) { // Update display every 100ms
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setFont(&TomThumb);
+    display.setCursor(0, 0);
+    display.drawBitmap(0, 0, epd_bitmap_allArray[scanMode], 128, 64, SSD1306_WHITE);
+
+    display.setTextSize(2);
+    display.setCursor(9, 27);
+    display.print(currentTime);
+
+    display.setTextSize(1);
+    display.setCursor(7, 38);
+    display.print(currentDate);
+    display.display();
+    
+    lastDisplayUpdate = currentMillis;
+  }
+}
+
+void displayFeedback() {
+  display.setTextColor(SSD1306_WHITE);
+  display.setFont(&TomThumb);
+  display.setCursor(57, 57);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  if (scanMode == 0) {
+    display.print("In/Out Update: OK");
+  } else if (scanMode == 1) {
+    display.print("Break Update: OK");
+  } else if (scanMode == 2) {
+    display.print("Enroll Success");
+  } else {
+    display.print("Scan Mode: Unknown");
+  }
+  display.print(" ");
+  display.display();
+}
+
 void setupWiFi() {
   useRGB(255, 0, 0); // Start with red light
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -159,6 +204,7 @@ void handleRFID() {
     mfrc522.PICC_HaltA();
     mfrc522.PCD_StopCrypto1();
     doubleBeep(); // Beep on successful scan
+    displayFeedback();
     delay(1000);
   }
 }
@@ -258,27 +304,8 @@ void loop() {
     lastTimeUpdate = currentMillis;
   }
 
-  // Update display less frequently to improve responsiveness
-  static unsigned long lastDisplayUpdate = 0;
-  if (currentMillis - lastDisplayUpdate >= 100) { // Update display every 100ms
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setFont(&TomThumb);
-    display.setCursor(0, 0);
-    display.drawBitmap(0, 0, epd_bitmap_allArray[scanMode], 128, 64, SSD1306_WHITE);
-
-    display.setTextSize(2);
-    display.setCursor(9, 27);
-    display.print(currentTime);
-
-    display.setTextSize(1);
-    display.setCursor(7, 38);
-    display.print(currentDate);
-    display.display();
-    
-    lastDisplayUpdate = currentMillis;
-  }
-
+  displayUI(currentMillis);
+  
   // Set LED color based on WiFi status (less frequently)
   static unsigned long lastLEDUpdate = 0;
   if (currentMillis - lastLEDUpdate >= 1000) { // Update LED every second
